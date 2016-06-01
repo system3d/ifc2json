@@ -1,7 +1,6 @@
 {
     "name": "system3d/ifc2json",
-    "description": "Convert IFC files into JSON",
-    "type": "project",
+    "description": "Convert IFC files into JSON",    
     "require": {
         "php": ">=5.3.0",
         "symfony/var-dumper": "^3.1"
@@ -15,7 +14,13 @@
     ],
     "autoload": {
         "psr-0": {
-             "System3D\\IFC2JSON" : "src"
+             "System3D\\IFC2JSON" : "src/"
         }
-    }
+    },        
+    "autoload-dev": {
+        "psr-0": {
+            "System3D\\IFC2JSON" : "src/"
+        }
+    },
+    "minimum-stability": "dev"
 }

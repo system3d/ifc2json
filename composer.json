@@ -1,0 +1,35 @@
+{
+    "name": "System3D/IFC2JSON",    
+    "description": "Convert IFC file into JSON format",
+    "authors": [
+        {
+            "name": "Luciano Tonet",
+            "email": "tonetlds@gmail.com",            
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^5.3.3 || ^7.0",
+        "symfony/var-dumper": "^3.1"
+    },
+    "repositories": [
+	    {
+	        "type": "package",
+	        "package": {
+	            "name": "weaverryan/derp-dangerzone",
+	            "version": "dev-master",
+	            "source": {
+	                "url": "git://github.com/weaverryan/derp-dangerzone.git",
+	                "type": "git",
+	                "reference": "master"
+	            },
+	            "autoload": {
+	                "psr-0" : {
+	                    "Weaverryan\\DangerZone" : "src"
+	                }
+	            }
+	        }
+	    }
+	],
+    "minimum-stability": "dev"
+}

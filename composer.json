@@ -1,35 +1,21 @@
 {
-    "name": "System3D/IFC2JSON",    
-    "description": "Convert IFC file into JSON format",
-    "authors": [
-        {
-            "name": "Luciano Tonet",
-            "email": "tonetlds@gmail.com",            
-            "role": "Developer"
-        }
-    ],
+    "name": "system3d/ifc2json",
+    "description": "Convert IFC files into JSON",
+    "type": "project",
     "require": {
-        "php": "^5.3.3 || ^7.0",
+        "php": ">=5.3.0",
         "symfony/var-dumper": "^3.1"
     },
-    "repositories": [
-	    {
-	        "type": "package",
-	        "package": {
-	            "name": "System3D/IFC2JSON",
-	            "version": "dev-master",
-	            "source": {
-	                "url": "git://github.com/System3D/IFC2JSON.git",
-	                "type": "git",
-	                "reference": "master"
-	            },
-	            "autoload": {
-	                "psr-0" : {
-	                    "System3D\\IFC2JSON" : "src"
-	                }
-	            }
-	        }
-	    }
-	],
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "Luciano",
+            "email": "tonetlds@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+             "System3D\\IFC2JSON" : "src"
+        }
+    }
 }

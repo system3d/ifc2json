@@ -23,5 +23,6 @@
         "psr-0": {
             "System3D\\IFC2JSON" : "src/"
         }
-    }
+    },
+    "minimum-stability": "dev"
 }

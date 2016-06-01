@@ -9,12 +9,12 @@ class IFC2JSON
 {
 
 	var $file,
-		$minify;
+		$magnify;
 
-	function __construct($file = null, $minify = false)
+	function __construct($file = null, $magnify = false)
 	{		
 		$this->file 	= $file;		
-		$this->minify 	= $minify;		
+		$this->magnify 	= $magnify;		
 	}
 
 
@@ -53,12 +53,12 @@ class IFC2JSON
     	
     	$data 		= $this->readIFC( $this->file );	
     	
-    	if( $this->minify ){
-    		$minified 	= $this->minify( $data );	
-    		return $minified;
+    	if( $this->magnify ){
+    		$minified 	= $this->magnify( $data, 8 );	
+    		$data = $minified;
     	}
     	
-    	return $data;
+    	return json_encode( $data );
     }
 
 
@@ -303,11 +303,81 @@ class IFC2JSON
 
 	}
 
-
-	public function minify($data)
+	/**
+	 * [magnify description]
+	 * @param  [type] $data [description]
+	 * @return [type]       [description]
+	 */
+	public function magnify($data, $levels = 5)
 	{
-		dump( $data );
-		$ifclosedshell = $data;
+
+		$this->data = $data['DATA'];
+		$data = $this->data;	
+
+		for ($level = 0; $level < $levels; $level++) { 	
+			$data = $this->processArray( $data );	
+		}
+
+		foreach ($data as $selector => $content) {
+			
+			// if( isset( $content['IFCCLOSEDSHELL'] ) ){				
+			// 	$ifclosedshell = $content['IFCCLOSEDSHELL'];
+			// }
+			
+			if( isset( $content['IFCPLATE'] ) ){				
+				$ifcplate[] = $content['IFCPLATE'];		
+			}
+
+		}
+
+		// for ($level = 0; $level < $levels; $level++) { 	
+		// 	$data = $this->processArray( $data );	
+		// }
+
+		$output = [];
+		// $output[ 'IFCCLOSEDSHELL' ] = $ifclosedshell;
+		$output[ 'IFCPLATE' ] 		= $ifcplate;
+
+		return $output;
+
+	}
+	
+
+	private function getItem($id)
+	{		
+		$data = $this->data;
+
+		if( is_array( $id ) ){			
+			return $id;
+		}
+
+		if( substr($id,0,1 ) == '#') {
+			return $data[ $id ];
+		}
+		
+		return $id;
+	}
+
+
+	private function processArray( $input ){	 
+	
+		if( is_array( $input ) ) {
+			foreach ($input as $key => $value) {
+				if( is_array( $value ) ) {
+					$input[ $key ] = $this->processArray( $value );
+				}else{
+					$input[ $key ] = $this->getItem( $value );						
+				}					
+			}
+		}else{
+
+			$input = $this->getItem($input);			
+
+		}
+		
+		// $input = $this->processArray( $input );			
+
+		return $input;
 	}
 
 }

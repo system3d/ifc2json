@@ -16,16 +16,16 @@
 	    {
 	        "type": "package",
 	        "package": {
-	            "name": "weaverryan/derp-dangerzone",
+	            "name": "System3D/IFC2JSON",
 	            "version": "dev-master",
 	            "source": {
-	                "url": "git://github.com/weaverryan/derp-dangerzone.git",
+	                "url": "git://github.com/System3D/IFC2JSON.git",
 	                "type": "git",
 	                "reference": "master"
 	            },
 	            "autoload": {
 	                "psr-0" : {
-	                    "Weaverryan\\DangerZone" : "src"
+	                    "System3D\\IFC2JSON" : "src"
 	                }
 	            }
 	        }

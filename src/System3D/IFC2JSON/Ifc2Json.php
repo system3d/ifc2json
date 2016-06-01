@@ -9,12 +9,12 @@ class IFC2JSON
 {
 
 	var $file,
-		$magnify;
+		$advanced;
 
-	function __construct($file = null, $magnify = false)
+	function __construct($file = null, $advanced = false)
 	{		
 		$this->file 	= $file;		
-		$this->magnify 	= $magnify;		
+		$this->advanced 	= $advanced;		
 	}
 
 
@@ -53,11 +53,12 @@ class IFC2JSON
     	
     	$data 		= $this->readIFC( $this->file );	
     	
-    	if( $this->magnify ){
-    		$minified 	= $this->magnify( $data, 8 );	
+    	if( $this->advanced ){
+    		$minified 	= $this->advanced( $data, 5 );	
     		$data = $minified;
     	}
     	
+    	dump( $data );
     	return json_encode( $data );
     }
 
@@ -304,11 +305,11 @@ class IFC2JSON
 	}
 
 	/**
-	 * [magnify description]
+	 * [advanced description]
 	 * @param  [type] $data [description]
 	 * @return [type]       [description]
 	 */
-	public function magnify($data, $levels = 5)
+	public function advanced($data, $levels = 5)
 	{
 
 		$this->data = $data['DATA'];

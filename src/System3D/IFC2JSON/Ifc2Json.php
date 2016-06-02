@@ -51,15 +51,48 @@ class IFC2JSON
     		return 'Informe o arquivo';
     	}
     	
-    	$data 		= $this->readIFC( $this->file );	
+    	$data = $this->readIFC( $this->file );	
     	
     	if( $this->advanced ){
-    		$minified 	= $this->advanced( $data, 5 );	
+    		$minified 	= $this->advanced( $data, 8 );	
     		$data = $minified;
     	}
     	
     	dump( $data );
     	return json_encode( $data );
+    }
+
+
+    public function download( $file = null )
+    {
+
+    	if ( is_file($file) ) {
+    		return $this->readIFC( $file );
+    		// return 'Convertendo e cuspindo json do arquivo '.$file.'...';
+    	}
+    	
+    	if (!$this->file) {
+    		return 'Informe o arquivo';
+    	}
+    	
+    	$data = $this->readIFC( $this->file );	
+    	
+    	if( $this->advanced ){
+    		$minified 	= $this->advanced( $data, 8 );	
+    		$data = $minified;
+    	}
+    	
+    	$data = json_encode( $data );
+
+
+    	// rename file
+    	$filname = str_replace('.ifc.ifc', '.ifc', $this->file);
+    	$filname = str_replace('.ifc', '.json', $filname);
+
+    	header('Content-disposition: attachment; filename='.$filname);
+		header('Content-type: application/json');
+		echo $data;
+		die;
     }
 
 
@@ -123,9 +156,13 @@ class IFC2JSON
 		    // --------------------------------------------------------
 
 		    
-		    // Conversão
+		    // Conversão dados
 		    foreach ($ifc['DATA'] as $ponteiro => $data) {		    	
-		    	$ifc['DATA'][ $ponteiro ] = $this->getConverted( $data );
+		    	$ifc['DATA'][ $ponteiro ] = $this->convertData( $data );
+		    }
+		    // Conversão Cabeçalho
+		    foreach ($ifc['HEADER'] as $ponteiro => $data) {		    	
+		    	$ifc['HEADER'][ $ponteiro ] = $this->convertHeader( $data );
 		    }
 		 
 
@@ -149,21 +186,28 @@ class IFC2JSON
 	 * @param  [type] $input [description]
 	 * @return [type]        [description]
 	 */
-	public function getConverted( $input){
+	public function convertData( $input ){
 	    $out = [];
 	    if( is_array($input) ){
 		    foreach ($input as $key => $val) {				
 	    		// print_r($val);
 		    	$out[] = $this->convert($val);
-		    }
-	    	// dump( $out );
-	    	// die;
+		    }	    	
 		    return $out;
 	    }else{
 			return $this->convert($input);
 	    }
 
     	
+    }
+
+
+    public function convertHeader( $input ){
+    	if( substr_count($input, 'FILE_SCHEMA') ){
+    		$input = $this->getInParenthesis( $input[0] );
+    		return $this->getInParenthesis( $input[0] );
+    	}
+    	return NULL;
     }
 
 	/**
@@ -219,7 +263,7 @@ class IFC2JSON
 					// Confere se ainda existe parenteses para convertes para array
 	    			if( substr_count($val, ')') ){
 
-		    			$valarray 	= $this->getConverted( $val );				    			
+		    			$valarray 	= $this->convertData( $val );				    			
 
 						$v[ $key ] 	= $valarray;
 					}else{
@@ -286,15 +330,15 @@ class IFC2JSON
 	{					
 		$string = $values;
 
-			$regex = '#\((([^()]+|(?R))*)\)#';
-			if (preg_match_all($regex, $string ,$matches)) {	
-			    				    
-			   	return $matches[1];				    	
+		$regex = '#\((([^()]+|(?R))*)\)#';
+		if (preg_match_all($regex, $string ,$matches)) {	
+		    				    
+		   	return $matches[1];				    	
 
-			} else {
-			    //no parenthesis
-			    return NULL;
-			}			
+		} else {
+		    //no parenthesis
+		    return NULL;
+		}			
 
 		if( substr_count($string, '(') < 2 ){
 		}else {
@@ -319,26 +363,31 @@ class IFC2JSON
 			$data = $this->processArray( $data );	
 		}
 
+		
+		$output = [];
+
+		$output[ 'FILENAME' ] = realpath( $this->file );
+
 		foreach ($data as $selector => $content) {
-			
-			// if( isset( $content['IFCCLOSEDSHELL'] ) ){				
-			// 	$ifclosedshell = $content['IFCCLOSEDSHELL'];
-			// }
-			
+						
 			if( isset( $content['IFCPLATE'] ) ){				
-				$ifcplate[] = $content['IFCPLATE'];		
+
+				// $output[ 'IFCCLOSEDSHELL' ]['HANDLE'] 	= $content['IFCPLATE'][4];
+				// $output[ 'IFCPLATE' ] 					= $content['IFCPLATE'][5];
+
 			}
 
+			if( isset( $content['IFCAPPLICATION'] ) ){				
+				// $output[ 'IFCAPPLICATION' ]	= $content['IFCAPPLICATION'][2];
+			}
+
+			if( isset( $content['IFCCLOSEDSHELL'][0] ) ){			
+				// dump( $content['IFCCLOSEDSHELL'] );
+				// die;
+				$output[ 'IFCCLOSEDSHELL' ][$selector] = $content['IFCCLOSEDSHELL'][0];				
+			}
 		}
-
-		// for ($level = 0; $level < $levels; $level++) { 	
-		// 	$data = $this->processArray( $data );	
-		// }
-
-		$output = [];
-		// $output[ 'IFCCLOSEDSHELL' ] = $ifclosedshell;
-		$output[ 'IFCPLATE' ] 		= $ifcplate;
-
+		
 		return $output;
 
 	}
@@ -353,6 +402,7 @@ class IFC2JSON
 		}
 
 		if( substr($id,0,1 ) == '#') {
+			// return [ $id => $data[ $id ] ];
 			return $data[ $id ];
 		}
 		

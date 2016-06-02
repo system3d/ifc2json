@@ -6,4 +6,4 @@ use System3D\IFC2JSON\IFC2JSON;
 
 $IFC2JSON = new IFC2JSON( "2chapas.ifc.ifc", true );
 
-dump( $IFC2JSON->getJson() );
+dump( $IFC2JSON->download() );

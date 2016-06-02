@@ -53,12 +53,11 @@ class IFC2JSON
     	
     	$data = $this->readIFC( $this->file );	
     	
-    	if( $this->advanced ){
+    	if( $this->advanced and $data ){
     		$minified 	= $this->advanced( $data, 8 );	
     		$data = $minified;
     	}
-    	
-    	dump( $data );
+    	    	
     	return json_encode( $data );
     }
 
@@ -86,10 +85,11 @@ class IFC2JSON
 
 
     	// rename file
-    	$filname = str_replace('.ifc.ifc', '.ifc', $this->file);
-    	$filname = str_replace('.ifc', '.json', $filname);
+    	$filename = str_replace('.ifc.ifc', '.ifc', $this->file);
+    	$filename = str_replace('.ifc', '.json', $filename);
+    	$filename = basename($filename);    	
 
-    	header('Content-disposition: attachment; filename='.$filname);
+    	header('Content-disposition: attachment; filename='.$filename);
 		header('Content-type: application/json');
 		echo $data;
 		die;
@@ -99,7 +99,7 @@ class IFC2JSON
     public function readIFC( $file )
     {    
     	if( !is_file( $file ) )
-    		return "Arquivo não encontrado!";    	
+    		return false;   	
 
     	$handle = fopen( $file, "r");
 		if ($handle) {
@@ -366,7 +366,7 @@ class IFC2JSON
 		
 		$output = [];
 
-		$output[ 'FILENAME' ] = realpath( $this->file );
+		$output[ 'FILENAME' ] = basename( realpath( $this->file ) );
 
 		foreach ($data as $selector => $content) {
 						

@@ -38,7 +38,6 @@ class IFC2JSON
     		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
     		$data['OBJECTS'] = $formated['OBJECTS'];
     		$data['MODELS'] = $formated['MODELS'];
-    		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
     	}
     	    	    	
     	// dump( $data );
@@ -470,21 +469,6 @@ class IFC2JSON
 
 		}		
 		$lines['GEOREPCONTEXT'] = $this->processArray( $GRC );
-
-		foreach ($GRC as $key => $value) {
-			$IFCLOCALPLACEMENT 		= $this->getItem( $value['IFCGEOMETRICREPRESENTATIONCONTEXT'][4] );
-			$IFCAXIS2PLACEMENT3D	= $IFCLOCALPLACEMENT['IFCAXIS2PLACEMENT3D'];
-
-			foreach ($IFCAXIS2PLACEMENT3D as $id => $content) {
-				$IFCCARTESIANPOINT = $this->getItem( $content );
-				$IFCAXIS2PLACEMENT3D[ $id ] = $this->processArray( $IFCCARTESIANPOINT );
-
-				$GRC[ $key ] = $IFCAXIS2PLACEMENT3D;
-			}
-
-		}		
-		$lines['GEOREPCONTEXT'] = $this->processArray( $GRC );
-		
 
 		foreach ($items as $key => $value) {	
 

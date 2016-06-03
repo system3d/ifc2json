@@ -29,12 +29,13 @@ class IFC2JSON
     	if (is_file($file) ) {
     		$data = $this->readIFC( $file );
     	}else{
-    		$data = $this->readIFC( $this->file, 'IFCPROPERTYSINGLEVALUE' );    		
+    		$data = $this->readIFC( $this->file );    		
     	}
     	
     	if( $this->formated and $data ){
     		$formated 		= $this->formated( $data, 8 );	
     		// unset( $data['DEMO'] ); // REMOVE DADOS COMPLETOS
+    		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
     		$data['OBJECTS'] = $formated['OBJECTS'];
     		$data['MODELS'] = $formated['MODELS'];
     	}
@@ -446,8 +447,28 @@ class IFC2JSON
 				$items[$key] = $IFCCLOSEDSHELL;
 			}
 
+			$IFCGEOMETRICREPRESENTATIONCONTEXT = $this->get( 'IFCGEOMETRICREPRESENTATIONCONTEXT', $value );
+			if($IFCGEOMETRICREPRESENTATIONCONTEXT){
+				// dump( $IFCGEOMETRICREPRESENTATIONCONTEXT );
+				$GRC[$key] = $IFCGEOMETRICREPRESENTATIONCONTEXT;
+			}
+
 		}	
 
+		
+		foreach ($GRC as $key => $value) {
+			$IFCLOCALPLACEMENT 		= $this->getItem( $value['IFCGEOMETRICREPRESENTATIONCONTEXT'][4] );
+			$IFCAXIS2PLACEMENT3D	= $IFCLOCALPLACEMENT['IFCAXIS2PLACEMENT3D'];
+
+			foreach ($IFCAXIS2PLACEMENT3D as $id => $content) {
+				$IFCCARTESIANPOINT = $this->getItem( $content );
+				$IFCAXIS2PLACEMENT3D[ $id ] = $this->processArray( $IFCCARTESIANPOINT );
+
+				$GRC[ $key ] = $IFCAXIS2PLACEMENT3D;
+			}
+
+		}		
+		$lines['GEOREPCONTEXT'] = $this->processArray( $GRC );
 
 		foreach ($items as $key => $value) {	
 
@@ -558,7 +579,8 @@ class IFC2JSON
 			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'IFCDIRECTIONZ' ]	= $normalZ['IFCDIRECTION'][0]; 		#12
 
 		}
-		// dump( $MODELS );
+
+		// dump( $lines );						
 		// die;
 					
 		return $lines;

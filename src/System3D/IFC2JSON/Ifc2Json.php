@@ -9,55 +9,39 @@ class IFC2JSON
 {
 
 	var $file,
-		$advanced;
+		$data,
+		$formated;
 
-	function __construct($file = null, $advanced = false)
+	function __construct($file = null, $formated = false)
 	{		
-		$this->file 	= $file;		
-		$this->advanced 	= $advanced;		
+		if (!is_file($file) ) {
+			return "Informe o arquivo";
+		}
+
+		$this->file 	= $file;
+		$this->formated = $formated;
+		$this->data;		
 	}
 
 
-	/**
-	 * [convert description]
-	 * @return [type] [description]
-	 */
-    public function convertFile( $file = null )
-    {
-    	if( is_file($file) ){
-			return $file . ' Ta convertido!';    	    	
-    	} else
-    	if( $this->file ){    		
-    		return $this->file . ' Ta convertido!';    	    		
-    	}
-    	
-    	return 'Converter o que?';
-    	
-    }
-
-    /**
-     * [getJson description]
-     * @param  [type] $file [description]
-     * @return [type]       [description]
-     */
     public function getJson( $file = null )
     {
-    	if ( is_file($file) ) {
-    		return $this->readIFC( $file );
-    		// return 'Convertendo e cuspindo json do arquivo '.$file.'...';
+    	if (is_file($file) ) {
+    		$data = $this->readIFC( $file );
+    	}else{
+    		$data = $this->readIFC( $this->file, 'IFCPROPERTYSINGLEVALUE' );    		
     	}
     	
-    	if (!$this->file) {
-    		return 'Informe o arquivo';
+    	if( $this->formated and $data ){
+    		$formated 		= $this->formated( $data, 8 );	
+    		// unset( $data['DEMO'] ); // REMOVE DADOS COMPLETOS
+    		$data['OBJECTS'] = $formated['OBJECTS'];
+    		$data['MODELS'] = $formated['MODELS'];
     	}
-    	
-    	$data = $this->readIFC( $this->file );	
-    	
-    	if( $this->advanced and $data ){
-    		$minified 	= $this->advanced( $data, 8 );	
-    		$data = $minified;
-    	}
-    	    	
+    	    	    	
+    	// dump( $data );
+    	// die;
+
     	return json_encode( $data );
     }
 
@@ -76,9 +60,9 @@ class IFC2JSON
     	
     	$data = $this->readIFC( $this->file );	
     	
-    	if( $this->advanced ){
-    		$minified 	= $this->advanced( $data, 8 );	
-    		$data = $minified;
+    	if( $this->formated ){
+    		$formated 	= $this->formated( $data, 8 );	
+    		$data = $formated;
     	}
     	
     	$data = json_encode( $data );
@@ -96,21 +80,23 @@ class IFC2JSON
     }
 
 
-    public function readIFC( $file )
-    {    
+    public function readIFC( $file, $filter = null )
+    {        	
     	if( !is_file( $file ) )
-    		return false;   	
+    		return "Arquivo IFC não encontrado";   	
 
-    	$handle = fopen( $file, "r");
-		if ($handle) {
+    	$file = fopen( $file, "r");
+		if ($file) {
 
 			$readingsection = '';
 
 			$ifc = [];
+			$brokenline = null;
 
-		    while (($line = fgets($handle)) !== false) {        
+		    while (($line = fgets($file)) !== false) { 
 
-		        // FIM SEÇÃO ?
+
+		    	// FIM SEÇÃO ?
 		        if( 'ENDSEC;' == substr( $line, 0, 7) ) {
 		        	// Fim seção    	
 		        	$readingsection = NULL;        	
@@ -121,16 +107,51 @@ class IFC2JSON
 
 		        // SEÇÃO HEADER
 		        if( 'HEADER' == $readingsection ){
-		        	
+
 		        	$ifc['HEADER'][] = $line;
 
 		        }; 
 		        		       
 		        // SEÇÃO DATA
 		        if( 'DATA' == $readingsection ){
+			    	
+			    	// 2nd METHOD
+			    	// $search 	= array("\r\n", ";"	, "=", "(", ")", "{:{");
+				    // $replace 	= array(''	  ,	','	, ':', ':{', "}", "{{");			    
+				    // $tempData   = str_replace($search, $replace, $line);				    			
+				    
+				    if( $brokenline ){
+				    	$line = $brokenline . $line;
+				    	$brokenline = null;
+						// dump($line);
+						// die;
+				    }
+
+					if( substr_count($line, ",\n") || !substr_count($line, ';') ){
+			    		$line   = str_replace(",\n", ',', $line);   
+			    		$line   = str_replace("\n", '', $line);   
+						$brokenline = $line;
+
+						$errors[] = "Linha quebrada.";
+
+					}
+					$line   = str_replace(	['= ', ",\n", "\n", "\r"], ['=', ',', '', ''], $line);
+
+
+					if( !substr_count($line, '#', 0, 1) ){
+
+						$line = $brokenline . $line;
+					}
+					
 
 		        	$item = explode('=', $line);
-		        	$ifc['DATA'][ $item[0] ] = $item[1];
+		        	if( !isset( $item[1] ) ){
+			        	dump( $item );
+			        	die;		        		
+		        	}
+		        	
+		        	$ifc['DATA'][ $item[0] ] = $item[1];		        					        		
+
 
 		        }; 
 		        
@@ -150,7 +171,7 @@ class IFC2JSON
 		    }
 
 		    // Fecha o arquivo
-		    fclose($handle);
+		    fclose($file);
 
 
 		    // --------------------------------------------------------
@@ -158,11 +179,29 @@ class IFC2JSON
 		    
 		    // Conversão dados
 		    foreach ($ifc['DATA'] as $ponteiro => $data) {		    	
-		    	$ifc['DATA'][ $ponteiro ] = $this->convertData( $data );
+
+		    	$tempData = $this->convertData( $data );
+				// $tempData = $this->flattenData( $tempData );
+
+		    	// $tempData = json_encode($tempData);
+		    	$ifc['DATA'][ $ponteiro ] = $tempData;
+		    	
 		    }
+
+		    // print_r( json_encode( $ifc ) );
+		    // die;
+
 		    // Conversão Cabeçalho
-		    foreach ($ifc['HEADER'] as $ponteiro => $data) {		    	
-		    	$ifc['HEADER'][ $ponteiro ] = $this->convertHeader( $data );
+
+		    foreach ($ifc['HEADER'] as $ponteiro => $data) {	
+		    	
+		    	$HEADERLINE = $this->convertToArray($data);
+
+		    	if( isset($HEADERLINE['FILE_SCHEMA ']) ){
+		    		$ifc['FILE_SCHEMA'] = $HEADERLINE['FILE_SCHEMA '][0][0];	   	 			
+		    	}
+
+		    	$ifc['FILE_NAME'] = basename($this->file);	   	 			
 		    }
 		 
 
@@ -171,18 +210,20 @@ class IFC2JSON
 		} 
 
 
-		// $ifc = json_encode( $ifc );
-	   	   
-	    return  $ifc;	  
+		$this->data = $ifc['DATA'];
+		unset( $ifc['DATA'] );
+		unset( $ifc['HEADER'] );
+
+	    return $ifc;	  
 
 	}
 
 	/**
 	 * TEJE CONVERTIDO!!!
 	 * Se for um array
-	 * 		Chama a função convert() várias vezes
+	 * 		Chama a função convertToArray() várias vezes
 	 * Se não for array
-	 * 		Chama convert() uma vez
+	 * 		Chama convertToArray() uma vez
 	 * @param  [type] $input [description]
 	 * @return [type]        [description]
 	 */
@@ -190,24 +231,13 @@ class IFC2JSON
 	    $out = [];
 	    if( is_array($input) ){
 		    foreach ($input as $key => $val) {				
-	    		// print_r($val);
-		    	$out[] = $this->convert($val);
+	    		$out[] = $this->convertToArray($val);
 		    }	    	
 		    return $out;
-	    }else{
-			return $this->convert($input);
+	    }else{	    
+			return $this->convertToArray($input);
 	    }
-
     	
-    }
-
-
-    public function convertHeader( $input ){
-    	if( substr_count($input, 'FILE_SCHEMA') ){
-    		$input = $this->getInParenthesis( $input[0] );
-    		return $this->getInParenthesis( $input[0] );
-    	}
-    	return NULL;
     }
 
 	/**
@@ -215,7 +245,7 @@ class IFC2JSON
      * @param  [type] $value [description]
      * @return Array        [description]
      */
-    public function convert($value){
+    public function convertToArray($value){
 		
     	# "IFCPROPERTYSINGLEVALUE('Part Mark',$,IFCLABEL('M3','M3','M1','M3','M2'),$);\r\n"	    		    	
 
@@ -346,56 +376,11 @@ class IFC2JSON
 		    return NULL;
 		}
 
-	}
-
-	/**
-	 * [advanced description]
-	 * @param  [type] $data [description]
-	 * @return [type]       [description]
-	 */
-	public function advanced($data, $levels = 5)
-	{
-
-		$this->data = $data['DATA'];
-		$data = $this->data;	
-
-		for ($level = 0; $level < $levels; $level++) { 	
-			$data = $this->processArray( $data );	
-		}
-
-		
-		$output = [];
-
-		$output[ 'FILENAME' ] = basename( realpath( $this->file ) );
-
-		foreach ($data as $selector => $content) {
-						
-			if( isset( $content['IFCPLATE'] ) ){				
-
-				// $output[ 'IFCCLOSEDSHELL' ]['HANDLE'] 	= $content['IFCPLATE'][4];
-				// $output[ 'IFCPLATE' ] 					= $content['IFCPLATE'][5];
-
-			}
-
-			if( isset( $content['IFCAPPLICATION'] ) ){				
-				// $output[ 'IFCAPPLICATION' ]	= $content['IFCAPPLICATION'][2];
-			}
-
-			if( isset( $content['IFCCLOSEDSHELL'][0] ) ){			
-				// dump( $content['IFCCLOSEDSHELL'] );
-				// die;
-				$output[ 'IFCCLOSEDSHELL' ][$selector] = $content['IFCCLOSEDSHELL'][0];				
-			}
-		}
-		
-		return $output;
-
-	}
-	
+	}	
 
 	private function getItem($id)
 	{		
-		$data = $this->data;
+		$data = $this->data;			
 
 		if( is_array( $id ) ){			
 			return $id;
@@ -427,8 +412,174 @@ class IFC2JSON
 		}
 		
 		// $input = $this->processArray( $input );			
-
+		
+		$input = $this->flatArray( $input );			
 		return $input;
+	}
+
+	private function flatArray( $input ){	 
+		if( is_array($input) && count( $input ) == 1 ){			
+			$input = array_shift( $input ); 			
+			return $input;
+		}else
+		if( is_array($input) && count( $input ) > 1 ){
+			foreach ($input as $key => $value) {
+				$input[ $key ] = $this->flatArray( $value );
+			}
+		};
+		return $input;
+	}
+
+
+	public function formated($data)
+	{
+		$lines = [];
+
+		$OBJECTS = [];
+		$MODELS = [];
+
+		
+		foreach ($this->data as $key => $value) {
+			
+			$IFCCLOSEDSHELL = $this->get( 'IFCPLATE', $value );
+			if($IFCCLOSEDSHELL){
+				$items[$key] = $IFCCLOSEDSHELL;
+			}
+
+		}	
+
+
+		foreach ($items as $key => $value) {	
+
+			// dump( $value );
+
+			$lines['OBJECTS'][] 			= $value['IFCPLATE'][5];
+			$OBJECTS['KEY'][]		 		= $value['IFCPLATE'][5];
+			$OBJECTS['HANDLE'][] 			= $value['IFCPLATE'][4];
+			$OBJECTS['MODEL'][] 			= $key;
+			
+			$MODELS['KEY'][ $key ]		= $value['IFCPLATE'][6]; 
+			$MODELS['HANDLE'][ $key ] 	= $value['IFCPLATE'][4]; 
+			
+		}
+
+		// exit;
+		
+		#64, #65...
+		foreach ( $OBJECTS['KEY'] as $key => $value) {
+			$IFCLOCALPLACEMENT 		= $this->getItem( $value );
+
+			#64=IFCLOCALPLACEMENT($,#49);
+
+			$IFCAXIS2PLACEMENT3D 	= $this->getItem( $IFCLOCALPLACEMENT[ 'IFCLOCALPLACEMENT' ][1] );
+			$IFCAXIS2PLACEMENT3D 	= $IFCAXIS2PLACEMENT3D[ 'IFCAXIS2PLACEMENT3D' ];
+
+			#49=IFCAXIS2PLACEMENT3D(#14,#11,#12);
+			$COORD 			= $this->getItem( $IFCAXIS2PLACEMENT3D[0] );
+			$IFCDIRECTIONZ	= $this->getItem( $IFCAXIS2PLACEMENT3D[1] );
+			$IFCDIRECTIONX	= $this->getItem( $IFCAXIS2PLACEMENT3D[2] );
+
+
+			$lines['OBJECTS'][ $key ] 					= [];
+			$lines['OBJECTS'][ $key ]['MODEL'] 			= $OBJECTS['MODEL'][ $key ];
+			$lines['OBJECTS'][ $key ]['HANDLE'] 			= $OBJECTS['HANDLE'][ $key ];
+			$lines['OBJECTS'][ $key ]['TYPE'] 			= 'IFCPLATE';
+			$lines['OBJECTS'][ $key ]['COORD'] 			= $COORD['IFCCARTESIANPOINT'][0];
+			$lines['OBJECTS'][ $key ]['IFCDIRECTIONZ']	= $IFCDIRECTIONZ['IFCDIRECTION'][0];
+			$lines['OBJECTS'][ $key ]['IFCDIRECTIONX']	= $IFCDIRECTIONX['IFCDIRECTION'][0];
+			
+		}
+
+	
+		#97, #98...
+		foreach ( $MODELS['KEY'] as $key => $value) {
+			
+			$IFCSHAPEREPRESENTATION 			= $this->getItem( $value );
+			
+			#97=IFCPRODUCTDEFINITIONSHAPE('35FF1E64FB494B70BF92E085DC4D9895',$,(#95));
+			
+			$IFCPRODUCTDEFINITIONSHAPE 			= $this->getItem( $IFCSHAPEREPRESENTATION['IFCPRODUCTDEFINITIONSHAPE'][2][0] );
+
+			#95=IFCSHAPEREPRESENTATION(#67,'Body','Brep',(#91));
+
+			$IFCGEOMETRICREPRESENTATIONCONTEXT	= $this->getItem( $IFCPRODUCTDEFINITIONSHAPE['IFCSHAPEREPRESENTATION'][3][0] );
+
+			#91=IFCFACETEDBREP(#87);
+
+			$IFCFACETEDBREP						= $this->getItem( $IFCGEOMETRICREPRESENTATIONCONTEXT['IFCFACETEDBREP'][0] );
+			$IFCCLOSEDSHELL						= $IFCFACETEDBREP['IFCCLOSEDSHELL'][0];
+
+			#87=IFCCLOSEDSHELL((#73,#74,#75,#76,#77,#78));
+			
+			foreach ($IFCCLOSEDSHELL as $ke => $val) {
+				$IFCFACE = $this->getItem( $val );
+				$IFCFACEOUTERBOUND 	= $this->getItem( $IFCFACE['IFCFACE'][0][0] );
+				
+				$IFCPOLYLOOP 		= $this->getItem( $IFCFACEOUTERBOUND['IFCFACEOUTERBOUND'][0] );
+				$IFCPOLYLOOP 		= $IFCPOLYLOOP['IFCPOLYLOOP'][0];				
+
+				foreach ($IFCPOLYLOOP as $k => $v) {
+					# code...
+					// $IFCPOLYLOOP['IFCPOLYLOOP'][0][ $k ] 	= $this->getItem( $v ); 
+					$IFCPOLYLOOP[ $k ] = $this->getItem( $v ); 
+
+					$IFCCARTESIANPOINT = [];
+					foreach ($IFCPOLYLOOP[ $k ] as $valor) {
+						$IFCCARTESIANPOINT[] = $valor[0];
+						// $IFCPOLYLOOP[ $k ][] = $valor[0];
+						// dump($chave);
+					}
+
+					$IFCPOLYLOOP[ $k ] = $IFCCARTESIANPOINT;
+
+				}
+				
+				$IFCCLOSEDSHELL[ $ke ] = $IFCPOLYLOOP;
+
+			}
+
+			$lines['MODELS'][ $key ] = $IFCCLOSEDSHELL;
+
+			#48=IFCAXIS2PLACEMENT3D(#13,#11,#12);
+
+			// $IFCCARTESIANPOINT					= $IFCAXIS2PLACEMENT3D['IFCAXIS2PLACEMENT3D']; // #13,#11,#12
+
+			// // #13, #11, #12
+			// $normal 		= $this->getItem( $IFCCARTESIANPOINT[0] ); 	#13
+			// $normalY 	= $this->getItem( $IFCCARTESIANPOINT[1] );	#11	
+			// $normalZ 	= $this->getItem( $IFCCARTESIANPOINT[2] );	#12
+
+			// $lines['MODELS'][ $key ] = []; // EMPTY ARRAY
+			// // TIPO: PLATE, COLUMN...
+			// $lines['MODELS'][ $key ][ 'IFCPLATE' ] 						= []; // EMPTY ARRAY
+			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'HANDLE' ] 			= $MODELS['HANDLE'][ $key ]; 	
+			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'COORD' ] 			= $normal['IFCCARTESIANPOINT'][0]; 	#13
+			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'IFCDIRECTIONY' ] 	= $normalY['IFCDIRECTION'][0];	 	#11
+			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'IFCDIRECTIONZ' ]	= $normalZ['IFCDIRECTION'][0]; 		#12
+
+		}
+		// dump( $MODELS );
+		// die;
+					
+		return $lines;
+
+	}
+
+
+	public function get($search='', $content )
+	{
+		// $entry = array_keys($content);
+		// dump($content);
+		if( isset( $content[ $search ] ) ){
+			$return = [ key($content) =>  $content[ key($content) ] ];
+			return $return;
+		}
+	}
+	
+	public function flattenData(array $array) {
+	    $return = array();
+	    array_walk_recursive($array, function($a) use (&$return) { $return[] = $a; });
+	    return $return;
 	}
 
 }

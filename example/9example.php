@@ -6,7 +6,7 @@ use System3D\IFC2JSON\IFC2JSON;
 
 // $IFC2JSON = new IFC2JSON( "20160414office_model_CV2_fordesign.ifc", true );
 $IFC2JSON = new IFC2JSON( "2chapas.ifc.ifc", true );
-// $IFC2JSON->download(); 
+$IFC2JSON->download(); 
 
 ?>
 <!DOCTYPE html>

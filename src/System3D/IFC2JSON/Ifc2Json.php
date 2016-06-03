@@ -63,9 +63,10 @@ class IFC2JSON
     	
     	if( $this->formated ){
     		$formated 	= $this->formated( $data, 8 );	
-    		$data = $formated;
+    		$data[] = $formated;
     	}
-    	
+       
+
     	$data = json_encode( $data );
 
 

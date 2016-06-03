@@ -63,7 +63,10 @@ class IFC2JSON
     	
     	if( $this->formated ){
     		$formated 	= $this->formated( $data, 8 );	
-    		$data[] = $formated;
+    		
+    		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
+    		$data['OBJECTS'] = $formated['OBJECTS'];
+    		$data['MODELS'] = $formated['MODELS'];
     	}
        
 

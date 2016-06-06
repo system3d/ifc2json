@@ -34,15 +34,13 @@ class IFC2JSON
     	
     	if( $this->formated and $data ){
     		$formated 		= $this->formated( $data, 8 );	
-    		// unset( $data['DEMO'] ); // REMOVE DADOS COMPLETOS
+    		
+    		$data['APPLICATION'] = $formated['IFCAPPLICATION'];
     		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
     		$data['OBJECTS'] = $formated['OBJECTS'];
     		$data['MODELS'] = $formated['MODELS'];
     	}
-    	    	    	
-    	// dump( $data );
-    	// die;
-
+    	    	    	    	
     	return json_encode( $data );
     }
 
@@ -63,7 +61,8 @@ class IFC2JSON
     	
     	if( $this->formated ){
     		$formated 	= $this->formated( $data, 8 );	
-    		
+
+    		$data['APPLICATION'] = $formated['IFCAPPLICATION'];
     		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
     		$data['OBJECTS'] = $formated['OBJECTS'];
     		$data['MODELS'] = $formated['MODELS'];
@@ -197,7 +196,6 @@ class IFC2JSON
 		    // die;
 
 		    // Conversão Cabeçalho
-
 		    foreach ($ifc['HEADER'] as $ponteiro => $data) {	
 		    	
 		    	$HEADERLINE = $this->convertToArray($data);
@@ -446,18 +444,52 @@ class IFC2JSON
 		
 		foreach ($this->data as $key => $value) {
 			
-			$IFCCLOSEDSHELL = $this->get( 'IFCPLATE', $value );
-			if($IFCCLOSEDSHELL){
-				$items[$key] = $IFCCLOSEDSHELL;
+			// IFCPLATE
+			if( isset($value['IFCPLATE']) ){
+				$IFCCLOSEDSHELL = $this->get( 'IFCPLATE', $value );
+				if($IFCCLOSEDSHELL){
+					$items[$key] = $IFCCLOSEDSHELL;
+				}
 			}
 
-			$IFCGEOMETRICREPRESENTATIONCONTEXT = $this->get( 'IFCGEOMETRICREPRESENTATIONCONTEXT', $value );
-			if($IFCGEOMETRICREPRESENTATIONCONTEXT){
-				// dump( $IFCGEOMETRICREPRESENTATIONCONTEXT );
-				$GRC[$key] = $IFCGEOMETRICREPRESENTATIONCONTEXT;
+
+			// IFCCOLUMN
+			if( isset($value['IFCCOLUMN']) ){
+				$IFCCLOSEDSHELL = $this->get( 'IFCCOLUMN', $value );
+				if($IFCCLOSEDSHELL){
+					$items[$key] = $IFCCLOSEDSHELL;
+				}
 			}
 
-		}	
+
+			// IFCBEAM
+			if( isset($value['IFCBEAM']) ){
+				$IFCCLOSEDSHELL = $this->get( 'IFCBEAM', $value );
+				if($IFCCLOSEDSHELL){
+					$items[$key] = $IFCCLOSEDSHELL;
+				}
+			}
+
+
+			// IFCGEOMETRICREPRESENTATIONCONTEXT
+			if( isset($value['IFCGEOMETRICREPRESENTATIONCONTEXT']) ){
+				$IFCGEOMETRICREPRESENTATIONCONTEXT = $this->get( 'IFCGEOMETRICREPRESENTATIONCONTEXT', $value );
+				if($IFCGEOMETRICREPRESENTATIONCONTEXT){
+					$GRC[$key] = $IFCGEOMETRICREPRESENTATIONCONTEXT;
+				}
+			}
+
+
+		    // IFCAPPLICATION
+			if( isset($value['IFCAPPLICATION']) ){
+			    $IFCAPPLICATION = $this->get( 'IFCAPPLICATION', $value );
+			    if($IFCAPPLICATION){
+			    	$IFCAPPLICATION = $IFCAPPLICATION['IFCAPPLICATION'][2];
+			    };						    
+			}
+		    
+		}
+		$lines['IFCAPPLICATION'] = $IFCAPPLICATION;
 
 		
 		foreach ($GRC as $key => $value) {
@@ -474,21 +506,21 @@ class IFC2JSON
 		}		
 		$lines['GEOREPCONTEXT'] = $this->processArray( $GRC );
 
+
 		foreach ($items as $key => $value) {	
-
-			// dump( $value );
-
-			$lines['OBJECTS'][] 			= $value['IFCPLATE'][5];
-			$OBJECTS['KEY'][]		 		= $value['IFCPLATE'][5];
-			$OBJECTS['HANDLE'][] 			= $value['IFCPLATE'][4];
-			$OBJECTS['MODEL'][] 			= $key;
 			
-			$MODELS['KEY'][ $key ]		= $value['IFCPLATE'][6]; 
-			$MODELS['HANDLE'][ $key ] 	= $value['IFCPLATE'][4]; 
+			$OBJECTS['TYPE'][] 					= key( $value );			
+
+			$entry 								= reset($value);			
+
+			$lines['OBJECTS'][] 				= $entry[5];
+			$OBJECTS['KEY'][]		 			= $entry[5];
+			$OBJECTS['HANDLE'][] 				= $entry[4];
+			$OBJECTS['MODEL'][] 				= $key;			
+			$MODELS['KEY'][ $key ]				= $entry[6]; 
+			$MODELS['HANDLE'][ $key ] 			= $entry[4]; 
 			
 		}
-
-		// exit;
 		
 		#64, #65...
 		foreach ( $OBJECTS['KEY'] as $key => $value) {
@@ -500,6 +532,7 @@ class IFC2JSON
 			$IFCAXIS2PLACEMENT3D 	= $IFCAXIS2PLACEMENT3D[ 'IFCAXIS2PLACEMENT3D' ];
 
 			#49=IFCAXIS2PLACEMENT3D(#14,#11,#12);
+			
 			$COORD 			= $this->getItem( $IFCAXIS2PLACEMENT3D[0] );
 			$IFCDIRECTIONZ	= $this->getItem( $IFCAXIS2PLACEMENT3D[1] );
 			$IFCDIRECTIONX	= $this->getItem( $IFCAXIS2PLACEMENT3D[2] );
@@ -507,8 +540,8 @@ class IFC2JSON
 
 			$lines['OBJECTS'][ $key ] 					= [];
 			$lines['OBJECTS'][ $key ]['MODEL'] 			= $OBJECTS['MODEL'][ $key ];
-			$lines['OBJECTS'][ $key ]['HANDLE'] 			= $OBJECTS['HANDLE'][ $key ];
-			$lines['OBJECTS'][ $key ]['TYPE'] 			= 'IFCPLATE';
+			$lines['OBJECTS'][ $key ]['HANDLE'] 		= $OBJECTS['HANDLE'][ $key ];
+			$lines['OBJECTS'][ $key ]['TYPE'] 			= $OBJECTS['TYPE'][ $key ];
 			$lines['OBJECTS'][ $key ]['COORD'] 			= $COORD['IFCCARTESIANPOINT'][0];
 			$lines['OBJECTS'][ $key ]['IFCDIRECTIONZ']	= $IFCDIRECTIONZ['IFCDIRECTION'][0];
 			$lines['OBJECTS'][ $key ]['IFCDIRECTIONX']	= $IFCDIRECTIONX['IFCDIRECTION'][0];

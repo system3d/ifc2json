@@ -504,9 +504,16 @@ class IFC2JSON
 			}
 
 		}		
+
 		$lines['GEOREPCONTEXT'] = $this->processArray( $GRC );
 
+		// Format ints
+		foreach ($lines['GEOREPCONTEXT'] as $key => $value) {
+			$lines['GEOREPCONTEXT'][ $key ] = array_map('intval', $value);
+			$lines['GEOREPCONTEXT'][ $key ] = implode(',', $lines['GEOREPCONTEXT'][ $key ]);
+		}
 
+	
 		foreach ($items as $key => $value) {	
 			
 			$OBJECTS['TYPE'][] 					= key( $value );			
@@ -534,6 +541,8 @@ class IFC2JSON
 			#49=IFCAXIS2PLACEMENT3D(#14,#11,#12);
 			
 			$COORD 			= $this->getItem( $IFCAXIS2PLACEMENT3D[0] );
+
+
 			$IFCDIRECTIONZ	= $this->getItem( $IFCAXIS2PLACEMENT3D[1] );
 			$IFCDIRECTIONX	= $this->getItem( $IFCAXIS2PLACEMENT3D[2] );
 
@@ -542,9 +551,14 @@ class IFC2JSON
 			$lines['OBJECTS'][ $key ]['MODEL'] 			= $OBJECTS['MODEL'][ $key ];
 			$lines['OBJECTS'][ $key ]['HANDLE'] 		= $OBJECTS['HANDLE'][ $key ];
 			$lines['OBJECTS'][ $key ]['TYPE'] 			= $OBJECTS['TYPE'][ $key ];
-			$lines['OBJECTS'][ $key ]['COORD'] 			= $COORD['IFCCARTESIANPOINT'][0];
-			$lines['OBJECTS'][ $key ]['IFCDIRECTIONZ']	= $IFCDIRECTIONZ['IFCDIRECTION'][0];
-			$lines['OBJECTS'][ $key ]['IFCDIRECTIONX']	= $IFCDIRECTIONX['IFCDIRECTION'][0];
+			
+			$COORD['IFCCARTESIANPOINT'][0]		= array_map('intval', $COORD['IFCCARTESIANPOINT'][0]);
+			$IFCDIRECTIONZ['IFCDIRECTION'][0]	= array_map('intval', $IFCDIRECTIONZ['IFCDIRECTION'][0]);
+			$IFCDIRECTIONX['IFCDIRECTION'][0]	= array_map('intval', $IFCDIRECTIONX['IFCDIRECTION'][0]);
+
+			$lines['OBJECTS'][ $key ]['COORD'] 	= implode(',', $COORD['IFCCARTESIANPOINT'][0] );
+			$lines['OBJECTS'][ $key ]['Z']		= implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] );
+			$lines['OBJECTS'][ $key ]['X']		= implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] );
 			
 		}
 
@@ -582,13 +596,17 @@ class IFC2JSON
 					$IFCPOLYLOOP[ $k ] = $this->getItem( $v ); 
 
 					$IFCCARTESIANPOINT = [];
-					foreach ($IFCPOLYLOOP[ $k ] as $valor) {
-						$IFCCARTESIANPOINT[] = $valor[0];
-						// $IFCPOLYLOOP[ $k ][] = $valor[0];
-						// dump($chave);
+					foreach ($IFCPOLYLOOP[ $k ] as $valor) {						
+
+						$formattedNumber = [];
+						foreach ($valor[0] as $number) {
+							$formattedNumber[] = intval($number);
+						}
+						$IFCCARTESIANPOINT[] = implode(',', $formattedNumber);
+
 					}
 
-					$IFCPOLYLOOP[ $k ] = $IFCCARTESIANPOINT;
+					$IFCPOLYLOOP[ $k ] = $this->processArray( $IFCCARTESIANPOINT );
 
 				}
 				
@@ -598,27 +616,7 @@ class IFC2JSON
 
 			$lines['MODELS'][ $key ] = $IFCCLOSEDSHELL;
 
-			#48=IFCAXIS2PLACEMENT3D(#13,#11,#12);
-
-			// $IFCCARTESIANPOINT					= $IFCAXIS2PLACEMENT3D['IFCAXIS2PLACEMENT3D']; // #13,#11,#12
-
-			// // #13, #11, #12
-			// $normal 		= $this->getItem( $IFCCARTESIANPOINT[0] ); 	#13
-			// $normalY 	= $this->getItem( $IFCCARTESIANPOINT[1] );	#11	
-			// $normalZ 	= $this->getItem( $IFCCARTESIANPOINT[2] );	#12
-
-			// $lines['MODELS'][ $key ] = []; // EMPTY ARRAY
-			// // TIPO: PLATE, COLUMN...
-			// $lines['MODELS'][ $key ][ 'IFCPLATE' ] 						= []; // EMPTY ARRAY
-			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'HANDLE' ] 			= $MODELS['HANDLE'][ $key ]; 	
-			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'COORD' ] 			= $normal['IFCCARTESIANPOINT'][0]; 	#13
-			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'IFCDIRECTIONY' ] 	= $normalY['IFCDIRECTION'][0];	 	#11
-			// $lines['MODELS'][ $key ][ 'IFCPLATE' ][ 'IFCDIRECTIONZ' ]	= $normalZ['IFCDIRECTION'][0]; 		#12
-
 		}
-
-		// dump( $lines );						
-		// die;
 					
 		return $lines;
 

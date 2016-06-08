@@ -5,7 +5,7 @@ require '../src/System3D/IFC2JSON/IFC2JSON.php';
 use System3D\IFC2JSON\IFC2JSON;
 
 // $IFC2JSON = new IFC2JSON( "20160414office_model_CV2_fordesign.ifc", true );
-$IFC2JSON = new IFC2JSON( "data/lancamento.ifc.ifc", true );
+$IFC2JSON = new IFC2JSON( "data/2prf-e-chapa.ifc.ifc", true );
 // $IFC2JSON->download(); 
 
 ?>

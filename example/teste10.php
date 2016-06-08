@@ -1,5 +1,4 @@
 <?php 
-
 require '../vendor/autoload.php'; 
 require '../src/System3D/IFC2JSON/IFC2JSON.php'; 
 use System3D\IFC2JSON\IFC2JSON;
@@ -7,7 +6,7 @@ use System3D\IFC2JSON\IFC2JSON;
 // $IFC2JSON = new IFC2JSON( "20160414office_model_CV2_fordesign.ifc", true );
 $IFC2JSON = new IFC2JSON( "data/3D_BASE_TESTE_0.ifc", true );
 $IFC2JSON->download(); 
-
+exit;
 ?>
 <!DOCTYPE html>
 <html lang="en">

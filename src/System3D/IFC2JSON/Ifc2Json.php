@@ -79,15 +79,21 @@ class IFC2JSON
     		$data['OBJECTS'] = $formated['OBJECTS'];
     		$data['MODELS'] = $formated['MODELS'];
     	}
-       
 
     	$data = json_encode( $data );
-
 
     	// rename file
     	$filename = str_replace('.ifc.ifc', '.ifc', $this->file);
     	$filename = str_replace('.ifc', '.json', $filename);
-    	$filename = basename($filename);    	
+
+		// put a timestamp
+		$filename = explode('.', $filename);
+		$name = $filename;
+		unset( $name[ count($name) -1 ] );
+
+		$timestamp = date('Y.m.d_H.i.s');
+		$filename = implode('', $name) . "_" . $timestamp . "." . end($filename);
+		$filename = basename($filename);    		
 
     	header('Content-disposition: attachment; filename='.$filename);
 		header('Content-type: application/json');

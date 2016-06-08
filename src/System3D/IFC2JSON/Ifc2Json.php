@@ -11,6 +11,8 @@ class IFC2JSON
 	var $file,
 		$data,
 		$points,
+		$vertices,
+		$faces,
 		$formated;
 
 	function __construct($file = null, $formated = false)
@@ -23,6 +25,8 @@ class IFC2JSON
 		$this->formated = $formated;
 		$this->data;		
 		$this->points 	= [];		
+		$this->vertices	= [];		
+		$this->faces	= [];		
 	}
 
 
@@ -40,6 +44,8 @@ class IFC2JSON
     		$data['APPLICATION'] = $formated['IFCAPPLICATION'];
     		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
     		$data['POINTS'] = $formated['POINTS'];    	
+    		$data['VERTICES'] = $formated['VERTICES'];
+    		$data['FACES'] = $formated['FACES'];
     		$data['OBJECTS'] = $formated['OBJECTS'];
     		$data['MODELS'] = $formated['MODELS'];
     	}
@@ -70,6 +76,8 @@ class IFC2JSON
     		$data['APPLICATION'] = $formated['IFCAPPLICATION'];
     		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
     		$data['POINTS'] = $formated['POINTS'];
+    		$data['VERTICES'] = $formated['VERTICES'];
+    		$data['FACES'] = $formated['FACES'];
     		$data['OBJECTS'] = $formated['OBJECTS'];
     		$data['MODELS'] = $formated['MODELS'];
     	}
@@ -528,7 +536,8 @@ class IFC2JSON
 		// Format ints
 		foreach ($lines['GEOREPCONTEXT'] as $key => $value) {
 			$lines['GEOREPCONTEXT'][ $key ] = array_map('intval', $value);
-			$lines['GEOREPCONTEXT'][ $key ] = implode(',', $lines['GEOREPCONTEXT'][ $key ]);
+			$vertice = implode(',', $lines['GEOREPCONTEXT'][ $key ]);
+			$lines['GEOREPCONTEXT'][ $key ] = $this->saveVertice( $vertice );			
 		}
 
 		
@@ -583,10 +592,19 @@ class IFC2JSON
 				$IFCDIRECTIONZ['IFCDIRECTION'][0]	= array_map( array($this, 'savePoint'), $IFCDIRECTIONZ['IFCDIRECTION'][0]);
 				$IFCDIRECTIONX['IFCDIRECTION'][0]	= array_map( array($this, 'savePoint'), $IFCDIRECTIONX['IFCDIRECTION'][0]);
 
-				$lines['OBJECTS'][ $key ]['COORD'] 	= implode(',', $COORD['IFCCARTESIANPOINT'][0] );
+				$vertice 	= implode(',', $COORD['IFCCARTESIANPOINT'][0] );
+				$vertice 	= $this->saveVertice( $vertice );			
+				$lines['OBJECTS'][ $key ]['COORD'] 	= $vertice;
+
 				// $lines['OBJECTS'][ $key ]['Z']		= implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] );
 				// $lines['OBJECTS'][ $key ]['X']		= implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] );
-				$lines['OBJECTS'][ $key ]['DIRECTION'] = [implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] ), implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] ) ];
+				$verticez = implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] );
+				$verticez = $this->saveVertice( $verticez );
+
+				$verticex = implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] );
+				$verticex = $this->saveVertice( $verticex );
+
+				$lines['OBJECTS'][ $key ]['DIRECTION'] = [$verticez, $verticex];
 				
 			}
 
@@ -634,7 +652,9 @@ class IFC2JSON
 							$formattedNumber = array_map('intval', $valor[0]);
 							$formattedNumber = array_map( array($this, 'savePoint'), $formattedNumber);								
 							
-							$IFCCARTESIANPOINT[] = implode(',', $formattedNumber);
+							$vertice = implode(',', $formattedNumber);
+							$vertice = $this->saveVertice( $vertice );
+							$IFCCARTESIANPOINT[] = $vertice;
 
 						}
 
@@ -642,7 +662,8 @@ class IFC2JSON
 
 					}
 					
-					$IFCCLOSEDSHELL[ $ke ] = $IFCPOLYLOOP;
+					$face = $this->saveFace( $IFCPOLYLOOP );					
+					$IFCCLOSEDSHELL[ $ke ] = $face;
 
 				}
 
@@ -709,16 +730,28 @@ class IFC2JSON
 				$IFCDIRECTIONX['IFCDIRECTION'][0]	= array_map( array($this, 'savePoint'), $IFCDIRECTIONX['IFCDIRECTION'][0]);
 
 
-				$lines['OBJECTS'][ $key ]['COORD'] 	= implode(',', $COORD['IFCCARTESIANPOINT'][0] );
+				$vertice = implode(',', $COORD['IFCCARTESIANPOINT'][0] );
+				$vertice = $this->saveVertice( $vertice );
+				$lines['OBJECTS'][ $key ]['COORD'] 	= $vertice;
+
+				$verticez = implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] );
+				$verticez = $this->saveVertice( $verticez );
+
+				$verticex = implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] );
+				$verticex = $this->saveVertice( $verticex );
+
+
 				// $lines['OBJECTS'][ $key ]['Z']		= implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] );
 				// $lines['OBJECTS'][ $key ]['X']		= implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] );
-				$lines['OBJECTS'][ $key ]['DIRECTION'] = [implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] ), implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] ) ];
+				$lines['OBJECTS'][ $key ]['DIRECTION'] = [$verticez, $verticex];
 											
 			}
 		}
 		// dump( $lines );
 		// exit;		
-		$lines['POINTS'] = $this->points;
+		$lines['POINTS'] 	= $this->points;
+		$lines['VERTICES'] 	= $this->vertices;
+		$lines['FACES']		= $this->faces;
 					
 		return $lines;
 
@@ -743,11 +776,36 @@ class IFC2JSON
 
 	public function savePoint($point)
 	{		
-		if( array_search($point, $this->points) ){
+		// dump( in_array($point, $this->points) );
+		if( in_array($point, $this->points) ){
 			return array_search($point, $this->points);
 		}else{
 			array_push($this->points, $point);
 			return array_search($point, $this->points);
+		}
+	}
+
+
+	public function saveVertice($vertice)
+	{		
+		// dump( in_array($vertice, $this->vertices) );
+		if( in_array($vertice, $this->vertices) ){
+			return array_search($vertice, $this->vertices);
+		}else{
+			array_push($this->vertices, $vertice);
+			return array_search($vertice, $this->vertices);
+		}
+	}
+
+
+	public function saveFace($face)
+	{		
+		// dump( in_array($face, $this->faces) );
+		if( in_array($face, $this->faces) ){
+			return array_search($face, $this->faces);
+		}else{
+			array_push($this->faces, $face);
+			return array_search($face, $this->faces);
 		}
 	}
 

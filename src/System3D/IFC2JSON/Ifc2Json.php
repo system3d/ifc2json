@@ -80,7 +80,12 @@ class IFC2JSON
     		$data['MODELS'] = $formated['MODELS'];
     	}
 
+
+    	// dump( $data );
+    	// die;
+
     	$data = json_encode( $data );
+
 
     	// rename file
     	$filename = str_replace('.ifc.ifc', '.ifc', $this->file);
@@ -98,6 +103,7 @@ class IFC2JSON
     	header('Content-disposition: attachment; filename='.$filename);
 		header('Content-type: application/json');
 		echo $data;
+		exit;
     }
 
 
@@ -531,13 +537,7 @@ class IFC2JSON
 
 		$lines['GEOREPCONTEXT'] = $this->processArray( $GRC );
 
-		// Format ints
-		foreach ($lines['GEOREPCONTEXT'] as $key => $value) {
-			$lines['GEOREPCONTEXT'][ $key ] = array_map('intval', $value);
-			$vertice = implode(',', $lines['GEOREPCONTEXT'][ $key ]);
-			$lines['GEOREPCONTEXT'][ $key ] = $this->saveVertice( $vertice );			
-		}
-
+		// ...
 		
 		// ITEMS
 		foreach ($items as $key => $value) {	
@@ -737,6 +737,25 @@ class IFC2JSON
 											
 			}
 		}
+
+
+		// Format ints
+		foreach ($lines['GEOREPCONTEXT'] as $key => $value) {
+			$lines['GEOREPCONTEXT'][ $key ] = array_map('intval', $value);
+			$lines['GEOREPCONTEXT'][ $key ] = array_map( array($this, 'savePoint'), $lines['GEOREPCONTEXT'][ $key ]);
+
+			// dump( $lines['GEOREPCONTEXT'][ $key ] );						
+
+			$vertice = implode(',', $lines['GEOREPCONTEXT'][ $key ]);
+
+			$lines['GEOREPCONTEXT'][ $key ] = $this->saveVertice( $vertice );
+			
+			// $lines['GEOREPCONTEXT'][ $key ] = $vertice;
+		}
+
+
+
+
 		$lines['POINTS'] 	= $this->points;
 		$lines['VERTICES'] 	= $this->vertices;
 		$lines['FACES']		= $this->faces;

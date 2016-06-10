@@ -41,13 +41,13 @@ class IFC2JSON
     	if( $this->formated and $data ){
     		$formated 		= $this->formated( $data, 8 );	
     		
-    		$data['APPLICATION'] = $formated['IFCAPPLICATION'];
-    		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
-    		$data['POINTS'] = $formated['POINTS'];    	
-    		$data['VERTICES'] = $formated['VERTICES'];
-    		$data['FACES'] = $formated['FACES'];
-    		$data['OBJECTS'] = $formated['OBJECTS'];
-    		$data['MODELS'] = $formated['MODELS'];
+    		$data['APP'] = $formated['IFCAPPLICATION'];
+    		$data['G'] = $formated['GEOREPCONTEXT'];
+    		$data['P'] = $formated['POINTS'];    	
+    		$data['V'] = $formated['VERTICES'];
+    		$data['F'] = $formated['FACES'];
+    		$data['O'] = $formated['OBJECTS'];
+    		$data['M'] = $formated['MODELS'];
     	}
     	    	   	    	    
     	return json_encode( $data );
@@ -71,13 +71,13 @@ class IFC2JSON
     	if( $this->formated ){
     		$formated 	= $this->formated( $data, 8 );	
 
-    		$data['APPLICATION'] = $formated['IFCAPPLICATION'];
-    		$data['GEOCONTEXT'] = $formated['GEOREPCONTEXT'];
-    		$data['POINTS'] = $formated['POINTS'];
-    		$data['VERTICES'] = $formated['VERTICES'];
-    		$data['FACES'] = $formated['FACES'];
-    		$data['OBJECTS'] = $formated['OBJECTS'];
-    		$data['MODELS'] = $formated['MODELS'];
+    		$data['APP'] = $formated['IFCAPPLICATION'];
+    		$data['G'] = $formated['GEOREPCONTEXT'];
+    		$data['P'] = $formated['POINTS'];
+    		$data['V'] = $formated['VERTICES'];
+    		$data['F'] = $formated['FACES'];
+    		$data['O'] = $formated['OBJECTS'];
+    		$data['M'] = $formated['MODELS'];
     	}
 
 
@@ -219,10 +219,10 @@ class IFC2JSON
 		    	$HEADERLINE = $this->convertToArray($data);
 
 		    	if( isset($HEADERLINE['FILE_SCHEMA ']) ){
-		    		$ifc['FILE_SCHEMA'] = $HEADERLINE['FILE_SCHEMA '][0][0];	   	 			
+		    		$ifc['SCHEMA'] = $HEADERLINE['FILE_SCHEMA '][0][0];	   	 			
 		    	}
 
-		    	$ifc['FILE_NAME'] = basename($this->file);	   	 			
+		    	$ifc['NAME'] = basename($this->file);	   	 			
 		    }
 		 
 
@@ -575,10 +575,10 @@ class IFC2JSON
 				$IFCDIRECTIONX	= $this->getItem( $IFCAXIS2PLACEMENT3D[2] );
 
 
-				$lines['OBJECTS'][ $key ] 					= [];
-				$lines['OBJECTS'][ $key ]['MODEL'] 			= $OBJECTS['MODEL'][ $key ];
-				$lines['OBJECTS'][ $key ]['HANDLE'] 		= $OBJECTS['HANDLE'][ $key ];
-				$lines['OBJECTS'][ $key ]['TYPE'] 			= $OBJECTS['TYPE'][ $key ];
+				$lines['OBJECTS'][ $key ] 	   = [];
+				$lines['OBJECTS'][ $key ]['M'] = $OBJECTS['MODEL'][ $key ];
+				$lines['OBJECTS'][ $key ]['H'] = $OBJECTS['HANDLE'][ $key ];
+				$lines['OBJECTS'][ $key ]['T'] = $this->replaceType( $OBJECTS['TYPE'][ $key ] );
 				
 				//FORMATA NÚMEROS
 				$COORD['IFCCARTESIANPOINT'][0]		= array_map('intval', $COORD['IFCCARTESIANPOINT'][0]);
@@ -592,7 +592,7 @@ class IFC2JSON
 
 				$vertice 	= implode(',', $COORD['IFCCARTESIANPOINT'][0] );
 				$vertice 	= $this->saveVertice( $vertice );			
-				$lines['OBJECTS'][ $key ]['COORD'] 	= $vertice;
+				$lines['OBJECTS'][ $key ]['C'] 	= $vertice;
 
 				// $lines['OBJECTS'][ $key ]['Z']		= implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] );
 				// $lines['OBJECTS'][ $key ]['X']		= implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] );
@@ -602,7 +602,7 @@ class IFC2JSON
 				$verticex = implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] );
 				$verticex = $this->saveVertice( $verticex );
 
-				$lines['OBJECTS'][ $key ]['DIRECTION'] = [$verticez, $verticex];
+				$lines['OBJECTS'][ $key ]['D'] = [$verticez, $verticex];
 				
 			}
 
@@ -707,10 +707,10 @@ class IFC2JSON
 				$IFCDIRECTIONX	= $this->getItem( $IFCAXIS2PLACEMENT3D[2] );
 
 
-				$lines['OBJECTS'][ $key ] 					= [];
-				$lines['OBJECTS'][ $key ]['MODEL'] 			= $OBJECTS['MODEL'][ $key ];
-				$lines['OBJECTS'][ $key ]['HANDLE'] 		= $OBJECTS['HANDLE'][ $key ];
-				$lines['OBJECTS'][ $key ]['TYPE'] 			= $OBJECTS['TYPE'][ $key ];
+				$lines['OBJECTS'][ $key ] 	   = [];
+				$lines['OBJECTS'][ $key ]['M'] = $OBJECTS['MODEL'][ $key ];
+				$lines['OBJECTS'][ $key ]['H'] = $OBJECTS['HANDLE'][ $key ];
+				$lines['OBJECTS'][ $key ]['T'] = $this->replaceType( $OBJECTS['TYPE'][ $key ] );
 				
 				// Formata números
 				$COORD['IFCCARTESIANPOINT'][0]		= array_map('intval', $COORD['IFCCARTESIANPOINT'][0]);
@@ -725,7 +725,7 @@ class IFC2JSON
 
 				$vertice = implode(',', $COORD['IFCCARTESIANPOINT'][0] );
 				$vertice = $this->saveVertice( $vertice );
-				$lines['OBJECTS'][ $key ]['COORD'] 	= $vertice;
+				$lines['OBJECTS'][ $key ]['C'] 	= $vertice;
 
 				$verticez = implode(',', $IFCDIRECTIONZ['IFCDIRECTION'][0] );
 				$verticez = $this->saveVertice( $verticez );
@@ -733,7 +733,7 @@ class IFC2JSON
 				$verticex = implode(',', $IFCDIRECTIONX['IFCDIRECTION'][0] );
 				$verticex = $this->saveVertice( $verticex );
 
-				$lines['OBJECTS'][ $key ]['DIRECTION'] = [$verticez, $verticex];
+				$lines['OBJECTS'][ $key ]['D'] = [$verticez, $verticex];
 											
 			}
 		}
@@ -809,6 +809,36 @@ class IFC2JSON
 			array_push($this->faces, $face);
 			return array_search($face, $this->faces);
 		}
+	}
+
+
+	public function replaceType($string)
+	{		
+		$newstring = "";
+
+		switch ($string) {
+			case 'IFCPLATE':
+				$newstring = "CH";
+				break;
+			
+			case 'IFCBUILDINGELEMENTPROXY':
+				$newstring = "PF";
+				break;
+			
+			case 'IFCBEAM':
+				$newstring = "VG";
+				break;
+			
+			case 'IFCCOLUMN':
+				$newstring = "PI";
+				break;
+			
+			default:
+				$newstring = $string;
+				break;
+		}
+
+		return $newstring;
 	}
 
 }

@@ -578,12 +578,12 @@ class IFC2JSON
 				$lines['OBJECTS'][ $key ] 	   = [];
 				$lines['OBJECTS'][ $key ]['M'] = $OBJECTS['MODEL'][ $key ];
 				$lines['OBJECTS'][ $key ]['H'] = $OBJECTS['HANDLE'][ $key ];
-				$lines['OBJECTS'][ $key ]['T'] = $this->replaceType( $OBJECTS['TYPE'][ $key ] );
-				
+				$lines['OBJECTS'][ $key ]['T'] = $this->replaceType( $OBJECTS['TYPE'][ $key ] );				
+
 				//FORMATA NÚMEROS
 				$COORD['IFCCARTESIANPOINT'][0]		= array_map('intval', $COORD['IFCCARTESIANPOINT'][0]);
-				$IFCDIRECTIONZ['IFCDIRECTION'][0]	= array_map('intval', $IFCDIRECTIONZ['IFCDIRECTION'][0]);
-				$IFCDIRECTIONX['IFCDIRECTION'][0]	= array_map('intval', $IFCDIRECTIONX['IFCDIRECTION'][0]);
+				$IFCDIRECTIONZ['IFCDIRECTION'][0]	= array_map('floatval', $IFCDIRECTIONZ['IFCDIRECTION'][0]);
+				$IFCDIRECTIONX['IFCDIRECTION'][0]	= array_map('floatval', $IFCDIRECTIONX['IFCDIRECTION'][0]);
 
 				// SALVA POINTS
 				$COORD['IFCCARTESIANPOINT'][0]		= array_map( array($this, 'savePoint'), $COORD['IFCCARTESIANPOINT'][0]);
@@ -603,7 +603,7 @@ class IFC2JSON
 				$verticex = $this->saveVertice( $verticex );
 
 				$lines['OBJECTS'][ $key ]['D'] = [$verticez, $verticex];
-				
+		
 			}
 
 		}

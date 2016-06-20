@@ -50,6 +50,7 @@ class IFC2JSON
     		$data['M'] = $formated['MODELS'];
     	}
     	    	   	    	    
+    	// return $data;
     	return json_encode( $data );
     }
 
@@ -714,8 +715,8 @@ class IFC2JSON
 				
 				// Formata números
 				$COORD['IFCCARTESIANPOINT'][0]		= array_map('intval', $COORD['IFCCARTESIANPOINT'][0]);
-				$IFCDIRECTIONZ['IFCDIRECTION'][0]	= array_map('intval', $IFCDIRECTIONZ['IFCDIRECTION'][0]);
-				$IFCDIRECTIONX['IFCDIRECTION'][0]	= array_map('intval', $IFCDIRECTIONX['IFCDIRECTION'][0]);
+				$IFCDIRECTIONZ['IFCDIRECTION'][0]	= array_map('floatval', $IFCDIRECTIONZ['IFCDIRECTION'][0]);
+				$IFCDIRECTIONX['IFCDIRECTION'][0]	= array_map('floatval', $IFCDIRECTIONX['IFCDIRECTION'][0]);
 
 				// SALVA POINTS
 				$COORD['IFCCARTESIANPOINT'][0]		= array_map( array($this, 'savePoint'), $COORD['IFCCARTESIANPOINT'][0]);

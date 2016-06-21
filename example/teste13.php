@@ -4,7 +4,7 @@ require '../src/System3D/IFC2JSON/IFC2JSON.php';
 use System3D\IFC2JSON\IFC2JSON;
 
 // $IFC2JSON = new IFC2JSON( "20160414office_model_CV2_fordesign.ifc", true );
-$IFC2JSON = new IFC2JSON( "data/CANTONEIRA-ROTACAO_X-45_Y-45_Z-45.ifc.ifc", true );
+$IFC2JSON = new IFC2JSON( "data/3CHAPAS_0.ifc.ifc", true );
 $IFC2JSON->download(); 
 exit;
 ?>
@@ -15,7 +15,7 @@ exit;
 	<title></title>
 </head>
 <body>
-	<?php dump( $IFC2JSON->getJson() ); ?>
+	<?php dump( $IFC2JSON->getJson(null, false) ); ?>
 	<script>		
 		console.log(<?php echo $IFC2JSON->getJson(); ?>);
 	</script>

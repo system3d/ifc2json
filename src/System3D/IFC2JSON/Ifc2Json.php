@@ -30,7 +30,7 @@ class IFC2JSON
 	}
 
 
-    public function getJson( $file = null )
+    public function getJson( $file = null, $json_encode = true )
     {
     	if (is_file($file) ) {
     		$data = $this->readIFC( $file );
@@ -51,7 +51,11 @@ class IFC2JSON
     	}
     	    	   	    	    
     	// return $data;
-    	return json_encode( $data );
+    	if( $json_encode ){
+    		return json_encode( $data );    		
+    	}else{
+			return $data;
+    	}
     }
 
 
@@ -458,15 +462,25 @@ class IFC2JSON
 		$lines 					= [];
 		$items 					= [];
 		$buildingelementproxy 	= [];
+		$IFCCLOSEDSHELLS = [];
 
 		$OBJECTS	= [];
 		$POINTS		= [];
-		$MODELS 	= [];
+		$MODELS 	= [];		
 		
 		foreach ($this->data as $key => $value) {
 			
+			// IFCCLOSEDSHELL
+			if( isset($value['IFCCLOSEDSHELL']) ){				
+				$IFCCLOSEDSHELL = $this->get( 'IFCCLOSEDSHELL', $value );
+				if($IFCCLOSEDSHELL){
+					$IFCCLOSEDSHELLS[$key] = $IFCCLOSEDSHELL['IFCCLOSEDSHELL'][0];
+				}
+			}
+
+
 			// IFCPLATE
-			if( isset($value['IFCPLATE']) ){
+			if( isset($value['IFCPLATE']) ){				
 				$IFCCLOSEDSHELL = $this->get( 'IFCPLATE', $value );
 				if($IFCCLOSEDSHELL){
 					$items[$key] = $IFCCLOSEDSHELL;
@@ -537,26 +551,32 @@ class IFC2JSON
 		}		
 
 		$lines['GEOREPCONTEXT'] = $this->processArray( $GRC );
-
+		
 		// ...
 		
 		// ITEMS
 		foreach ($items as $key => $value) {	
+
 			
-			$OBJECTS['TYPE'][] 					= key( $value );			
+			$OBJECTS['TYPE'][] 			= key( $value );			
 
-			$entry 								= reset($value);			
+			$entry 						= reset($value);			
 
-			$lines['OBJECTS'][] 				= $entry[5];
-			$OBJECTS['KEY'][]		 			= $entry[5];
-			$OBJECTS['HANDLE'][] 				= $entry[4];
-			$OBJECTS['MODEL'][] 				= $key;			
-			$MODELS['KEY'][ $key ]				= $entry[6]; 
-			$MODELS['HANDLE'][ $key ] 			= $entry[4]; 
+			$lines['OBJECTS'][] 		= $entry[5];
+			
+			$OBJECTS['MODEL'][] 		 = $key;
+
+			$OBJECTS['IFCCLOSEDSHELL'][] = $key;
+
+			$OBJECTS['KEY'][]		 	= $entry[5];
+			$OBJECTS['HANDLE'][] 		= $entry[4];
+
+			$MODELS['KEY'][ $key ]		= $entry[6]; 
+			$MODELS['HANDLE'][ $key ] 	= $entry[4]; 
 			
 		}
 		
-
+				
 		if( isset($OBJECTS['KEY']) ){
 			#64, #65...
 			foreach ( $OBJECTS['KEY'] as $key => $value) {
@@ -577,7 +597,23 @@ class IFC2JSON
 
 
 				$lines['OBJECTS'][ $key ] 	   = [];
-				$lines['OBJECTS'][ $key ]['M'] = $OBJECTS['MODEL'][ $key ];
+
+				// $lines['OBJECTS'][ $key ]['M'] = $OBJECTS['MODEL'][ $key ];	
+				
+				// IFCCLOSEDSHELL
+				$CLOSEDSHELL = $OBJECTS['IFCCLOSEDSHELL'][ $key ];
+				$CLOSEDSHELL = $this->getItem( $CLOSEDSHELL );
+
+				$chave 		 = key( $CLOSEDSHELL );
+				$CLOSEDSHELL = $CLOSEDSHELL[ $chave ];
+				$CLOSEDSHELL = $this->getItem( $CLOSEDSHELL[6] );
+				$CLOSEDSHELL = $this->getItem( $CLOSEDSHELL['IFCPRODUCTDEFINITIONSHAPE'][2][0] );
+				$CLOSEDSHELL = $this->getItem( $CLOSEDSHELL['IFCSHAPEREPRESENTATION'][3][0] );
+				$CLOSEDSHELL = $CLOSEDSHELL['IFCFACETEDBREP'][0];			
+
+				$lines['OBJECTS'][ $key ]['M'] = $CLOSEDSHELL;
+								
+
 				$lines['OBJECTS'][ $key ]['H'] = $OBJECTS['HANDLE'][ $key ];
 				$lines['OBJECTS'][ $key ]['T'] = $this->replaceType( $OBJECTS['TYPE'][ $key ] );				
 
@@ -609,10 +645,14 @@ class IFC2JSON
 
 		}
 
+
 		if( isset($MODELS['KEY']) ){
+
+			$tempClosedShell = [];
+
 			#97, #98...
-			foreach ( $MODELS['KEY'] as $key => $value) {
-				
+			foreach ( $MODELS['KEY'] as $key => $value) {				
+
 				$IFCSHAPEREPRESENTATION 			= $this->getItem( $value );
 				
 				#97=IFCPRODUCTDEFINITIONSHAPE('35FF1E64FB494B70BF92E085DC4D9895',$,(#95));
@@ -628,7 +668,7 @@ class IFC2JSON
 				$IFCFACETEDBREP						= $this->getItem( $IFCGEOMETRICREPRESENTATIONCONTEXT['IFCFACETEDBREP'][0] );
 				$IFCCLOSEDSHELL						= $IFCFACETEDBREP['IFCCLOSEDSHELL'][0];
 
-				#87=IFCCLOSEDSHELL((#73,#74,#75,#76,#77,#78));
+				#87=IFCCLOSEDSHELL((#73,#74,#75,#76,#77,#78));		
 				
 				foreach ($IFCCLOSEDSHELL as $ke => $val) {
 					$IFCFACE = $this->getItem( $val );
@@ -663,15 +703,21 @@ class IFC2JSON
 					
 					$face = $this->saveFace( $IFCPOLYLOOP );					
 					$IFCCLOSEDSHELL[ $ke ] = $face;
-
+				
 				}
 
-				$lines['MODELS'][ $key ] = $IFCCLOSEDSHELL;
+				$closedShellKey = $IFCGEOMETRICREPRESENTATIONCONTEXT['IFCFACETEDBREP'][0];
+				
 
+				$tempClosedShell[ $closedShellKey ] = $IFCCLOSEDSHELL;			
+				$OBJECTS['MODEL'][ $key ] = $closedShellKey;
+				// dump( $OBJECTS['MODEL'][ $key ] );
 			}
-
+			
+			$lines['MODELS'] = $tempClosedShell;			
 		}
 
+		
 
 		/**
 		 * 	PARAFUSOS
@@ -679,21 +725,20 @@ class IFC2JSON
 		$PARAFUSOS = [];
 		foreach ($buildingelementproxy as $key => $value) {	
 			
-			$OBJECTS['TYPE'][] 					= key( $value );			
+			$OBJ2['TYPE'][] 				= key( $value );			
+			$entry 							= reset($value);			
 
-			$entry 								= reset($value);			
-
-			$lines['OBJECTS'][] 				= $entry[5];
-			$OBJECTS['KEY'][]		 			= $entry[5];
-			$OBJECTS['HANDLE'][] 				= $entry[4];
-			$OBJECTS['MODEL'][] 				= '';			
+			$lines['OBJECTS'][] 			= $entry[5];
+			$OBJ2['KEY'][]		 			= $entry[5];
+			$OBJ2['HANDLE'][] 				= $entry[4];
+			$OBJ2['MODEL'][] 				= '';			
 			// $MODELS['KEY'][ $key ]				= $entry[6]; 
 			// $MODELS['HANDLE'][ $key ] 			= $entry[4]; 
 			
 		}
 
-		if( isset($OBJECTS['KEY']) ){
-			foreach ($OBJECTS['KEY'] as $key => $value) {	
+		if( isset($OBJ2['KEY']) ){
+			foreach ($OBJ2['KEY'] as $key => $value) {	
 
 				$IFCLOCALPLACEMENT 		= $this->getItem( $value );
 				$IFCAXIS2PLACEMENT3D 	= $this->getItem( $IFCLOCALPLACEMENT[ 'IFCLOCALPLACEMENT' ][1] );
@@ -709,9 +754,9 @@ class IFC2JSON
 
 
 				$lines['OBJECTS'][ $key ] 	   = [];
-				$lines['OBJECTS'][ $key ]['M'] = $OBJECTS['MODEL'][ $key ];
-				$lines['OBJECTS'][ $key ]['H'] = $OBJECTS['HANDLE'][ $key ];
-				$lines['OBJECTS'][ $key ]['T'] = $this->replaceType( $OBJECTS['TYPE'][ $key ] );
+				$lines['OBJECTS'][ $key ]['M'] = $OBJ2['MODEL'][ $key ];				
+				$lines['OBJECTS'][ $key ]['H'] = $OBJ2['HANDLE'][ $key ];
+				$lines['OBJECTS'][ $key ]['T'] = $this->replaceType( $OBJ2['TYPE'][ $key ] );
 				
 				// Formata números
 				$COORD['IFCCARTESIANPOINT'][0]		= array_map('intval', $COORD['IFCCARTESIANPOINT'][0]);
